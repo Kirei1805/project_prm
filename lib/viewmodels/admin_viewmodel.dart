@@ -16,10 +16,16 @@ class AdminViewModel extends ChangeNotifier {
   StreamSubscription? _usersSubscription;
   StreamSubscription? _productsSubscription;
 
-  bool _isLoading = true;
+  bool _isLoading = false;
 
-  AdminViewModel() {
-    _initStreams();
+  AdminViewModel();
+
+  /// Gọi hàm này khi Admin Dashboard được mở lần đầu
+  void initIfNeeded() {
+    if (_ordersSubscription == null) {
+      _isLoading = true;
+      _initStreams();
+    }
   }
 
   List<OrderModel> get allOrders => _allOrders;

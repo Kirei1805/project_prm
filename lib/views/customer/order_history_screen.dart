@@ -67,7 +67,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           ],
                         ),
                         trailing: Text(
-                          '\$${order.totalAmount.toStringAsFixed(2)}',
+                          CurrencyFormatter.format(order.totalAmount),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

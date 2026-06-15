@@ -7,8 +7,6 @@ import '../../utils/app_colors.dart';
 import '../../services/vnpay_service.dart';
 import 'vnpay_payment_screen.dart';
 import '../../utils/currency_formatter.dart';
-import 'store_location_screen.dart';
-
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -138,26 +136,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Delivery Address',
-                  prefixIcon: const Icon(Icons.location_on),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.map, color: AppColors.accent),
-                    tooltip: 'Pick on map',
-                    onPressed: () async {
-                      final selectedAddress = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const StoreLocationScreen(isPickerMode: true),
-                        ),
-                      );
-                      if (selectedAddress != null && selectedAddress is String) {
-                        setState(() {
-                          _addressController.text = selectedAddress;
-                        });
-                      }
-                    },
-                  ),
+                  prefixIcon: Icon(Icons.location_on),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {

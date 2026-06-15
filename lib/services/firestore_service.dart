@@ -15,7 +15,24 @@ class FirestoreService {
 
   Future<UserModel?> getUser(String uid) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      print('--- Đang lấy User từ Firestore: $uid ---');
+      // Thử cache trước để tránh chờ kết nối lần đầu
+      DocumentSnapshot? doc;
+      try {
+        doc = await _firestore
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        // Nếu cache trống, lấy từ server
+        doc = await _firestore
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.server))
+            .timeout(const Duration(seconds: 10));
+      }
+
+      print('--- Đã lấy xong: ${doc.exists} ---');
       if (doc.exists) {
         return UserModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }
@@ -32,14 +49,18 @@ class FirestoreService {
 
   // --- Categories ---
   Stream<List<CategoryModel>> getCategoriesStream() {
-    return _firestore.collection('categories').snapshots().map((snapshot) {
+    return _firestore.collection('categories')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
       return snapshot.docs.map((doc) => CategoryModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
 
   // --- Products ---
   Stream<List<ProductModel>> getProductsStream() {
-    return _firestore.collection('products').snapshots().map((snapshot) {
+    return _firestore.collection('products')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
       return snapshot.docs.map((doc) => ProductModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
@@ -81,21 +102,24 @@ class FirestoreService {
     return _firestore
         .collection('orders')
         .where('userId', isEqualTo: userId)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((snapshot) {
       return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
 
-  // --- Admin ---
   Stream<List<UserModel>> getAllUsersStream() {
-    return _firestore.collection('users').snapshots().map((snapshot) {
+    return _firestore.collection('users')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
       return snapshot.docs.map((doc) => UserModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
 
   Stream<List<OrderModel>> getAllOrdersStream() {
-    return _firestore.collection('orders').snapshots().map((snapshot) {
+    return _firestore.collection('orders')
+        .snapshots(includeMetadataChanges: true)
+        .map((snapshot) {
       return snapshot.docs.map((doc) => OrderModel.fromMap(doc.data(), doc.id)).toList();
     });
   }

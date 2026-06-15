@@ -51,8 +51,13 @@ class ProductViewModel extends ChangeNotifier {
   StreamSubscription? _productsSubscription;
   StreamSubscription? _categoriesSubscription;
 
-  ProductViewModel() {
-    _initStreams();
+  ProductViewModel();
+
+  /// Gọi khi HomeScreen được mở
+  void initIfNeeded() {
+    if (_productsSubscription == null) {
+      _initStreams();
+    }
   }
 
   void _initStreams() {
@@ -63,9 +68,21 @@ class ProductViewModel extends ChangeNotifier {
 
     _productsSubscription = _firestoreService.getProductsStream().listen((prods) {
       _allProducts = prods;
-      _applyFilters();
+      _isLoading = false;
+      _applyFilters(); // _applyFilters already calls notifyListeners()
+    }, onError: (e) {
+      print('Lỗi Stream Products: $e');
       _isLoading = false;
       notifyListeners();
+    });
+    
+    // Timeout nếu stream không nhận được data (emulator IPv6 issue)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_isLoading) {
+        print('Cảnh báo: Stream bị treo, tự động tắt loading!');
+        _isLoading = false;
+        notifyListeners();
+      }
     });
   }
 

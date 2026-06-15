@@ -5,8 +5,23 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/currency_formatter.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future(() {
+      if (mounted) {
+        Provider.of<AdminViewModel>(context, listen: false).initIfNeeded();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

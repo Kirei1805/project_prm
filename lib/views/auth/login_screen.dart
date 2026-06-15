@@ -25,20 +25,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    // Guard: chặn gọi đôi (user bấm Enter rồi bấm nút login)
+    if (authViewModel.isLoading) return;
     if (_formKey.currentState!.validate()) {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
       final success = await authViewModel.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       if (success && mounted) {
+        print('--- Đăng nhập thành công, chuẩn bị chuyển màn hình ---');
         if (authViewModel.currentUser?.role == 'admin') {
+          print('--- Chuyển tới Admin Dashboard ---');
           Navigator.pushReplacementNamed(context, '/admin_dashboard');
         } else {
+          print('--- Chuyển tới Home Screen ---');
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else if (mounted) {
+        print('--- Đăng nhập thất bại: ${authViewModel.errorMessage} ---');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authViewModel.errorMessage),
