@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/admin_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class ProductManagementScreen extends StatelessWidget {
   const ProductManagementScreen({super.key});
@@ -78,7 +79,7 @@ class ProductManagementScreen extends StatelessWidget {
                           ),
                         ),
                         title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                        subtitle: Text('Stock: ${product.stock} | Price: \$${product.price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.textSecondary)),
+                        subtitle: Text('Stock: ${product.stock} | Price: ${CurrencyFormatter.format(product.price)}', style: const TextStyle(color: AppColors.textSecondary)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/admin_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -97,7 +98,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       _buildStatCard('Total Products', '${admin.totalProducts}', Icons.inventory, Colors.blue),
                       _buildStatCard('Total Users', '${admin.totalUsers}', Icons.people, Colors.green),
                       _buildStatCard('Total Orders', '${admin.totalOrders}', Icons.shopping_bag, Colors.orange),
-                      _buildStatCard('Revenue', '\$${admin.totalRevenue.toStringAsFixed(2)}', Icons.attach_money, Colors.purple),
+                      _buildStatCard('Revenue', CurrencyFormatter.format(admin.totalRevenue), Icons.attach_money, Colors.purple),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -118,9 +119,9 @@ class AdminDashboardScreen extends StatelessWidget {
                               color: AppColors.surface,
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
-                                title: Text('Order #${order.id}', style: const TextStyle(color: AppColors.textPrimary)),
-                                subtitle: Text('Status: ${order.status}', style: const TextStyle(color: AppColors.textSecondary)),
-                                trailing: Text('\$${order.totalAmount.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold)),
+                                title: Text('Order #${order.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('${order.items.length} items - ${order.status}'),
+                                trailing: Text(CurrencyFormatter.format(order.totalAmount), style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold)),
                               ),
                             );
                           },

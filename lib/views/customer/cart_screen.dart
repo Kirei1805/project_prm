@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -79,7 +80,7 @@ class CartScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '\$${item.product.price.toStringAsFixed(2)}',
+                                      CurrencyFormatter.format(item.product.price),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: AppColors.accent,
@@ -136,7 +137,7 @@ class CartScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '\$${cartViewModel.totalAmount.toStringAsFixed(2)}',
+                            CurrencyFormatter.format(cartViewModel.totalAmount),
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,

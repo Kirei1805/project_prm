@@ -4,6 +4,10 @@ import '../../viewmodels/cart_viewmodel.dart';
 import '../../viewmodels/order_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../services/vnpay_service.dart';
+import 'vnpay_payment_screen.dart';
+import '../../utils/currency_formatter.dart';
+import 'store_location_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -16,6 +20,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   String _selectedPaymentMethod = 'Cash On Delivery';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize address if user already has it saved
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = Provider.of<AuthViewModel>(context, listen: false).currentUser;
+      if (user != null && user.address.isNotEmpty) {
+        _addressController.text = user.address;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -31,21 +47,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (auth.currentUser == null) return;
 
-      final success = await orderViewModel.placeOrder(auth.currentUser!.id, cart);
+      // Generate a unique order ID
+      final String orderId = DateTime.now().millisecondsSinceEpoch.toString();
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order placed successfully!')),
+      if (_selectedPaymentMethod == 'Bank Transfer (VNPAY)') {
+        final paymentUrl = VNPayService.generatePaymentUrl(
+          orderId: orderId,
+          amount: cart.totalAmount,
+          orderInfo: 'Payment_Order_$orderId',
         );
-        Navigator.pushReplacementNamed(context, '/home');
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(orderViewModel.errorMessage),
-            backgroundColor: AppColors.error,
+
+        final isSuccess = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VNPayPaymentScreen(paymentUrl: paymentUrl),
           ),
         );
+
+        if (isSuccess == true) {
+          // Proceed to place order
+          await _submitOrder(orderViewModel, auth.currentUser!.id, cart, auth);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payment cancelled or failed!'), backgroundColor: AppColors.error),
+          );
+        }
+      } else {
+        await _submitOrder(orderViewModel, auth.currentUser!.id, cart, auth);
       }
+    }
+  }
+
+  Future<void> _submitOrder(OrderViewModel orderViewModel, String userId, CartViewModel cart, AuthViewModel auth) async {
+    // Save address if changed
+    if (_addressController.text.isNotEmpty && auth.currentUser?.address != _addressController.text) {
+      await auth.updateAddress(_addressController.text);
+    }
+
+    final success = await orderViewModel.placeOrder(userId, cart, paymentMethod: _selectedPaymentMethod);
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order placed successfully!')),
+      );
+      Navigator.pushReplacementNamed(context, '/home');
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(orderViewModel.errorMessage),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -86,7 +138,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'Delivery Address', prefixIcon: Icon(Icons.location_on)),
+                decoration: InputDecoration(
+                  labelText: 'Delivery Address',
+                  prefixIcon: const Icon(Icons.location_on),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.map, color: AppColors.accent),
+                    tooltip: 'Pick on map',
+                    onPressed: () async {
+                      final selectedAddress = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const StoreLocationScreen(isPickerMode: true),
+                        ),
+                      );
+                      if (selectedAddress != null && selectedAddress is String) {
+                        setState(() {
+                          _addressController.text = selectedAddress;
+                        });
+                      }
+                    },
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your delivery address';
@@ -119,8 +191,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       activeColor: AppColors.accent,
                     ),
                     RadioListTile<String>(
-                      title: const Text('Bank Transfer'),
-                      value: 'Bank Transfer',
+                      title: const Text('Bank Transfer (Online Payment)'),
+                      value: 'Bank Transfer (VNPAY)',
                       groupValue: _selectedPaymentMethod,
                       onChanged: (value) {
                         setState(() {
@@ -129,6 +201,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       },
                       activeColor: AppColors.accent,
                     ),
+                    if (_selectedPaymentMethod == 'Bank Transfer (VNPAY)')
+                      Padding(
+                        padding: const EdgeInsets.only(left: 72.0, right: 16.0, bottom: 16.0),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.accent.withOpacity(0.5)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.security, color: AppColors.accent, size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Giao dịch an toàn qua Cổng thanh toán VNPAY (Sandbox)',
+                                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -150,7 +246,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Items Total:', style: TextStyle(color: AppColors.textSecondary)),
-                        Text('\$${cart.totalAmount.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.textPrimary)),
+                        Text(CurrencyFormatter.format(cart.totalAmount), style: const TextStyle(color: AppColors.textPrimary)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -167,7 +263,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       children: [
                         const Text('Total Amount:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                         Text(
-                          '\$${cart.totalAmount.toStringAsFixed(2)}',
+                          CurrencyFormatter.format(cart.totalAmount),
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
                         ),
                       ],

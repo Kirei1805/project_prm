@@ -59,6 +59,15 @@ class AuthService {
     }
   }
 
+  Future<void> updateAddress(String uid, String address) async {
+    try {
+      await _firestoreService.updateUserAddress(uid, address);
+    } catch (e) {
+      print('Update address error: $e');
+      rethrow;
+    }
+  }
+
   // Sign out
   Future<void> logout() async {
     await _auth.signOut();

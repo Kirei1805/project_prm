@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/admin_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class OrderManagementScreen extends StatelessWidget {
   const OrderManagementScreen({super.key});
@@ -47,7 +48,7 @@ class OrderManagementScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '\$${order.totalAmount.toStringAsFixed(2)}',
+                                  CurrencyFormatter.format(order.totalAmount),
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accent, fontSize: 16),
                                 ),
                               ],

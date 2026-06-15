@@ -47,6 +47,10 @@ dependencies:
   google_maps_flutter: ^2.17.1
   geolocator: ^14.0.2
   http: ^1.6.0
+  vnpay_client: ^0.0.3
+  crypto: ^3.0.7
+  url_launcher: ^6.3.2
+  geocoding: ^4.0.0
 
 dev_dependencies:
   flutter_test:

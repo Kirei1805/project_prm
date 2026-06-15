@@ -5,6 +5,7 @@ import '../../models/product_model.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key});
@@ -82,7 +83,7 @@ class ProductDetailScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '\$${product.price.toStringAsFixed(2)}',
+                        CurrencyFormatter.format(product.price),
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -134,12 +135,15 @@ class ProductDetailScreen extends StatelessWidget {
                     onPressed: product.stock > 0
                         ? () {
                             Provider.of<CartViewModel>(context, listen: false).addItem(product!);
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
+                                behavior: SnackBarBehavior.floating,
                                 content: Text('${product.name} added to cart!'),
                                 action: SnackBarAction(
                                   label: 'VIEW CART',
                                   onPressed: () {
+                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
                                     Navigator.pushNamed(context, '/cart');
                                   },
                                 ),
@@ -247,7 +251,7 @@ class ProductDetailScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '\$${product.price.toStringAsFixed(2)}',
+                                CurrencyFormatter.format(product.price),
                                 style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
                               ),
                             ],

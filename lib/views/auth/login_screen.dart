@@ -93,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     key: const Key('emailField'),
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
@@ -126,6 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                     ),
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _handleLogin(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Password cannot be empty';

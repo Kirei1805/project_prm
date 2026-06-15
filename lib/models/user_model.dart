@@ -4,6 +4,7 @@ class UserModel {
   final String email;
   final String phone;
   final String role; // 'customer' or 'admin'
+  final String address;
 
   UserModel({
     required this.id,
@@ -11,6 +12,7 @@ class UserModel {
     required this.email,
     required this.phone,
     required this.role,
+    this.address = '',
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String documentId) {
@@ -20,6 +22,7 @@ class UserModel {
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
       role: data['role'] ?? 'customer',
+      address: data['address'] ?? '',
     );
   }
 
@@ -29,6 +32,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'role': role,
+      'address': address,
     };
   }
 }
