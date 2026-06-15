@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/order_model.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key});
@@ -36,6 +37,11 @@ class OrderDetailScreen extends StatelessWidget {
                     'Status: ${order.status}',
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accent, fontSize: 18),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Payment Method: ${order.paymentMethod}',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                  ),
                 ],
               ),
             ),
@@ -53,7 +59,7 @@ class OrderDetailScreen extends StatelessWidget {
                   title: Text(item.name, style: const TextStyle(color: AppColors.textPrimary)),
                   subtitle: Text('Quantity: ${item.quantity}', style: const TextStyle(color: AppColors.textSecondary)),
                   trailing: Text(
-                    '\$${(item.price * item.quantity).toStringAsFixed(2)}',
+                    CurrencyFormatter.format(item.price * item.quantity),
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accent),
                   ),
                 ),
@@ -74,7 +80,7 @@ class OrderDetailScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   Text(
-                    '\$${order.totalAmount.toStringAsFixed(2)}',
+                    CurrencyFormatter.format(order.totalAmount),
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
                   ),
                 ],

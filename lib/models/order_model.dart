@@ -35,6 +35,7 @@ class OrderModel {
   final String userId;
   final String status;
   final double totalAmount;
+  final String paymentMethod;
   final List<OrderItemModel> items;
 
   OrderModel({
@@ -42,6 +43,7 @@ class OrderModel {
     required this.userId,
     required this.status,
     required this.totalAmount,
+    required this.paymentMethod,
     required this.items,
   });
 
@@ -57,6 +59,7 @@ class OrderModel {
       userId: data['userId'] ?? '',
       status: data['status'] ?? 'Pending',
       totalAmount: (data['totalAmount'] ?? 0.0).toDouble(),
+      paymentMethod: data['paymentMethod'] ?? 'Cash On Delivery',
       items: itemsList,
     );
   }
@@ -66,6 +69,7 @@ class OrderModel {
       'userId': userId,
       'status': status,
       'totalAmount': totalAmount,
+      'paymentMethod': paymentMethod,
       'items': items.map((item) => item.toMap()).toList(),
     };
   }

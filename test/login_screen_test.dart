@@ -28,6 +28,9 @@ class MockAuthViewModel extends ChangeNotifier implements AuthViewModel {
 
   @override
   Future<void> logout() async {}
+
+  @override
+  Future<void> updateAddress(String address) async {}
 }
 
 void main() {

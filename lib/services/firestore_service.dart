@@ -26,6 +26,10 @@ class FirestoreService {
     }
   }
 
+  Future<void> updateUserAddress(String uid, String address) async {
+    await _firestore.collection('users').doc(uid).update({'address': address});
+  }
+
   // --- Categories ---
   Stream<List<CategoryModel>> getCategoriesStream() {
     return _firestore.collection('categories').snapshots().map((snapshot) {
@@ -55,12 +59,22 @@ class FirestoreService {
 
   // --- Orders ---
   Future<void> createOrder(OrderModel order) async {
-    // Generate a new document reference
-    DocumentReference ref = _firestore.collection('orders').doc();
-    // Update the ID to the generated one or keep using Firestore-generated ID.
-    // In this case, we just save the map without setting the doc ID explicitly if the order object didn't have one,
-    // but the toMap doesn't include ID, which is correct.
-    await ref.set(order.toMap());
+    WriteBatch batch = _firestore.batch();
+
+    // Generate a new document reference for the order
+    DocumentReference orderRef = _firestore.collection('orders').doc();
+    batch.set(orderRef, order.toMap());
+
+    // Deduct stock for each item in the order
+    for (var item in order.items) {
+      DocumentReference productRef = _firestore.collection('products').doc(item.productId);
+      batch.update(productRef, {
+        'stock': FieldValue.increment(-item.quantity)
+      });
+    }
+
+    // Commit all operations atomically
+    await batch.commit();
   }
 
   Stream<List<OrderModel>> getUserOrdersStream(String userId) {

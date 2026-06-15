@@ -5,6 +5,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 import '../../models/product_model.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -342,7 +343,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${product.price.toStringAsFixed(2)}',
+                    CurrencyFormatter.format(product.price),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

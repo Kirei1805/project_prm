@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/order_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/currency_formatter.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -59,6 +60,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           children: [
                             const SizedBox(height: 8),
                             Text('Status: ${order.status}', style: const TextStyle(color: AppColors.accent)),
+                            const SizedBox(height: 4),
+                            Text('Method: ${order.paymentMethod}', style: const TextStyle(color: AppColors.textSecondary)),
                             const SizedBox(height: 4),
                             Text('Items: ${order.items.length}', style: const TextStyle(color: AppColors.textSecondary)),
                           ],

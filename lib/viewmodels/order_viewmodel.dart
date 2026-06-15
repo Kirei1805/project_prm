@@ -33,7 +33,7 @@ class OrderViewModel extends ChangeNotifier {
     });
   }
 
-  Future<bool> placeOrder(String userId, CartViewModel cart) async {
+  Future<bool> placeOrder(String userId, CartViewModel cart, {String paymentMethod = 'Cash On Delivery'}) async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
@@ -51,8 +51,9 @@ class OrderViewModel extends ChangeNotifier {
       final order = OrderModel(
         id: '', // Firestore will generate ID
         userId: userId,
-        status: 'Pending',
+        status: paymentMethod == 'Bank Transfer (VNPAY)' ? 'Paid' : 'Pending',
         totalAmount: cart.totalAmount,
+        paymentMethod: paymentMethod,
         items: items,
       );
 
