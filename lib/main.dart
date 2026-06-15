@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 import 'routes/app_routes.dart';
@@ -14,15 +15,16 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // NOTE: Firebase.initializeApp() needs configuration parameters depending on the platform.
-  // We put a try-catch so the app doesn't crash if Firebase isn't configured yet.
   try {
     await Firebase.initializeApp();
-    // Initialize Notification Service
-    final notificationService = NotificationService();
-    await notificationService.init();
+    
+    // Bật offline persistence + cấu hình Firestore cho emulator
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
   } catch (e) {
-    print("Firebase initialization error (might be missing google-services.json): $e");
+    print("Firebase initialization error: $e");
   }
 
   runApp(
@@ -37,6 +39,16 @@ void main() async {
       child: const ElectroHubApp(),
     ),
   );
+
+  // Notification init - fire and forget, không block gì cả
+  Future.delayed(const Duration(seconds: 3), () async {
+    try {
+      final notificationService = NotificationService();
+      await notificationService.init();
+    } catch (e) {
+      print("Notification init error: $e");
+    }
+  });
 }
 
 class ElectroHubApp extends StatelessWidget {
@@ -47,7 +59,7 @@ class ElectroHubApp extends StatelessWidget {
     return MaterialApp(
       title: 'ElectroHub',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme, // Premium dark theme
+      theme: AppTheme.darkTheme,
       initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
     );

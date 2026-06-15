@@ -8,18 +8,43 @@ import '../../utils/app_colors.dart';
 import '../../utils/currency_formatter.dart';
 import '../../models/product_model.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Dùng Future() để schedule ra ngoài frame hiện tại - UI render trước, streams khởi động sau
+    Future(() {
+      if (mounted) {
+        Provider.of<ProductViewModel>(context, listen: false).initIfNeeded();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // listen: false vì authViewModel không thay đổi trong màn hình này
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    final productViewModel = Provider.of<ProductViewModel>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ElectroHub', style: TextStyle(color: AppColors.accent)),
         actions: [
+          // Consumer giới hạn rebuild chỉ badge giỏ hàng
           Consumer<CartViewModel>(
             builder: (context, cart, child) {
               return Stack(
@@ -62,7 +87,7 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              Scaffold.of(context).openDrawer(); // We will use drawer instead of direct logout here
+              Scaffold.of(context).openDrawer();
             },
           ),
         ],
@@ -109,7 +134,6 @@ class HomeScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/store_location');
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.notifications, color: AppColors.accent),
               title: const Text('Notifications'),
@@ -137,57 +161,72 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: productViewModel.isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome message
-                  Text(
-                    'Hello, ${authViewModel.currentUser?.name ?? 'Guest'}!',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'What are you looking for today?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Search Bar
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search for components...',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.arrow_forward, color: AppColors.accent),
-                        onPressed: () {
-                          // Trigger search navigation
+      // Dùng Consumer chỉ để rebuild phần body khi productViewModel thay đổi
+      body: Consumer<ProductViewModel>(
+        builder: (context, productViewModel, _) {
+          if (productViewModel.isLoading) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.accent));
+          }
+
+          // Dùng CustomScrollView + Sliver để tránh shrinkWrap
+          return CustomScrollView(
+            slivers: [
+              // Header: Welcome + Search
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, ${authViewModel.currentUser?.name ?? 'Guest'}!',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'What are you looking for today?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Search Bar
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search for components...',
+                          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.arrow_forward, color: AppColors.accent),
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/product_list');
+                            },
+                          ),
+                        ),
+                        onChanged: (value) {
+                          productViewModel.setSearchQuery(value);
+                        },
+                        onSubmitted: (_) {
                           Navigator.pushNamed(context, '/product_list');
                         },
                       ),
-                    ),
-                    onChanged: (value) {
-                      productViewModel.setSearchQuery(value);
-                    },
-                    onSubmitted: (_) {
-                      Navigator.pushNamed(context, '/product_list');
-                    },
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                  const SizedBox(height: 24),
+                ),
+              ),
 
-                  // Smart Recommendations
-                  if (productViewModel.searchQuery.toLowerCase().contains('irrigation')) ...[
-                    const Text(
+              // Smart Recommendations (chỉ hiện khi search 'irrigation')
+              if (productViewModel.searchQuery.toLowerCase().contains('irrigation')) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
                       'Smart Recommendations',
                       style: TextStyle(
                         fontSize: 20,
@@ -195,23 +234,30 @@ class HomeScreen extends StatelessWidget {
                         color: AppColors.accent,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 150,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: productViewModel.recommendedProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = productViewModel.recommendedProducts[index];
-                          return _buildProductCard(context, product);
-                        },
-                      ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      itemCount: productViewModel.recommendedProducts.length,
+                      itemBuilder: (context, index) {
+                        return _buildHorizontalProductCard(
+                            context, productViewModel.recommendedProducts[index]);
+                      },
                     ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ],
 
-                  // Categories
-                  const Text(
+              // Categories title
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
                     'Categories',
                     style: TextStyle(
                       fontSize: 20,
@@ -219,20 +265,30 @@ class HomeScreen extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  productViewModel.categories.isEmpty
-                      ? const Text('No categories found.', style: TextStyle(color: AppColors.textSecondary))
-                      : GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 2.5,
-                          ),
-                          itemCount: productViewModel.categories.length,
-                          itemBuilder: (context, index) {
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+              // Categories Grid — dùng SliverGrid thay vì shrinkWrap GridView
+              productViewModel.categories.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text('No categories found.',
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 2.5,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
                             final category = productViewModel.categories[index];
                             return GestureDetector(
                               onTap: () {
@@ -256,11 +312,18 @@ class HomeScreen extends StatelessWidget {
                               ),
                             );
                           },
+                          childCount: productViewModel.categories.length,
                         ),
-                  const SizedBox(height: 32),
-                  
-                  // Featured Products (Just showing all products for now)
-                  const Text(
+                      ),
+                    ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+              // Featured Products title
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
                     'Featured Products',
                     style: TextStyle(
                       fontSize: 20,
@@ -268,39 +331,107 @@ class HomeScreen extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  productViewModel.products.isEmpty
-                      ? const Text('No products available.', style: TextStyle(color: AppColors.textSecondary))
-                      : GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: productViewModel.products.length,
-                          itemBuilder: (context, index) {
-                            final product = productViewModel.products[index];
-                            return _buildProductCard(context, product);
-                          },
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+              // Products Grid — SliverGrid với lazy rendering tự động
+              productViewModel.products.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text('No products available.',
+                            style: TextStyle(color: AppColors.textSecondary)),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.75,
                         ),
-                ],
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return _buildProductCard(
+                                context, productViewModel.products[index]);
+                          },
+                          childCount: productViewModel.products.length,
+                        ),
+                      ),
+                    ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHorizontalProductCard(BuildContext context, ProductModel product) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/product_detail', arguments: product);
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: product.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: product.imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: AppColors.textSecondary),
+                      )
+                    : Container(
+                        color: AppColors.background,
+                        width: double.infinity,
+                        child: const Icon(Icons.memory,
+                            size: 40, color: AppColors.textSecondary),
+                      ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                product.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildProductCard(BuildContext context, ProductModel product) {
     return GestureDetector(
       onTap: () {
-        // Navigate to product detail
         Navigator.pushNamed(context, '/product_detail', arguments: product);
       },
       child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -316,13 +447,18 @@ class HomeScreen extends StatelessWidget {
                         imageUrl: product.imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: AppColors.textSecondary),
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => const Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: AppColors.textSecondary),
                       )
                     : Container(
                         color: AppColors.background,
                         width: double.infinity,
-                        child: const Icon(Icons.memory, size: 50, color: AppColors.textSecondary),
+                        child: const Icon(Icons.memory,
+                            size: 50, color: AppColors.textSecondary),
                       ),
               ),
             ),

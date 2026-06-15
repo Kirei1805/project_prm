@@ -41,16 +41,20 @@ class AuthService {
     }
   }
 
-  // Sign in
   Future<UserModel?> loginWithEmailPassword(String email, String password) async {
     try {
+      print('--- Bắt đầu đăng nhập Firebase Auth ---');
       UserCredential credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      print('--- Đăng nhập Firebase Auth thành công, UID: ${credential.user?.uid} ---');
 
       if (credential.user != null) {
-        return await _firestoreService.getUser(credential.user!.uid);
+        print('--- Bắt đầu lấy dữ liệu từ Firestore ---');
+        final userModel = await _firestoreService.getUser(credential.user!.uid);
+        print('--- Lấy dữ liệu Firestore thành công ---');
+        return userModel;
       }
       return null;
     } catch (e) {
