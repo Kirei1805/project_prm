@@ -183,7 +183,7 @@ class ProductListScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   
                   // Price Filter (Text Inputs)
-                  const Text('Price Range (\$)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const Text('Price Range (VND)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -193,7 +193,7 @@ class ProductListScreen extends StatelessWidget {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: 'Min Price',
-                            prefixText: '\$',
+                            suffixText: 'đ',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           ),
@@ -211,7 +211,7 @@ class ProductListScreen extends StatelessWidget {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: 'Max Price',
-                            prefixText: '\$',
+                            suffixText: 'đ',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           ),
