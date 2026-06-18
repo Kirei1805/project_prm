@@ -33,6 +33,7 @@ class CartViewModel extends ChangeNotifier {
 
   void addItem(ProductModel product) {
     if (_items.containsKey(product.id)) {
+      if (_items[product.id]!.quantity >= product.stock) return;
       _items.update(
         product.id,
         (existingCartItem) => CartItem(
@@ -41,6 +42,7 @@ class CartViewModel extends ChangeNotifier {
         ),
       );
     } else {
+      if (product.stock <= 0) return;
       _items.putIfAbsent(
         product.id,
         () => CartItem(product: product, quantity: 1),
@@ -73,6 +75,9 @@ class CartViewModel extends ChangeNotifier {
 
   void increaseQuantity(String productId) {
     if (!_items.containsKey(productId)) return;
+    
+    final item = _items[productId]!;
+    if (item.quantity >= item.product.stock) return;
     
     _items.update(
       productId,

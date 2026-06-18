@@ -12,6 +12,7 @@ import 'viewmodels/order_viewmodel.dart';
 import 'viewmodels/admin_viewmodel.dart';
 import 'services/notification_service.dart';
 
+/// Main entry point of the application
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
