@@ -52,17 +52,20 @@ class ProductDetailScreen extends StatelessWidget {
             SizedBox(
               height: 300,
               width: double.infinity,
-              child: product.imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                      errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 100, color: AppColors.textSecondary),
-                    )
-                  : Container(
-                      color: AppColors.background,
-                      child: const Icon(Icons.memory, size: 100, color: AppColors.textSecondary),
-                    ),
+              child: Hero(
+                tag: 'product_image_${product.id}',
+                child: product.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: product.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 100, color: AppColors.textSecondary),
+                      )
+                    : Container(
+                        color: AppColors.background,
+                        child: const Icon(Icons.memory, size: 100, color: AppColors.textSecondary),
+                      ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(24.0),

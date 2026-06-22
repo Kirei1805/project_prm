@@ -105,7 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Icon(Icons.account_circle, size: 60, color: AppColors.accent),
+                  authViewModel.currentUser?.avatarUrl.isNotEmpty == true
+                      ? CircleAvatar(
+                          radius: 30,
+                          backgroundImage: CachedNetworkImageProvider(authViewModel.currentUser!.avatarUrl),
+                        )
+                      : const Icon(Icons.account_circle, size: 60, color: AppColors.accent),
                   const SizedBox(height: 10),
                   Text(
                     authViewModel.currentUser?.name ?? 'Guest',
@@ -117,6 +122,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline, color: AppColors.accent),
+              title: const Text('My Profile', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/profile');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.history, color: AppColors.textPrimary),

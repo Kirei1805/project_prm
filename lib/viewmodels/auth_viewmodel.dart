@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -105,10 +106,57 @@ class AuthViewModel extends ChangeNotifier {
         phone: _currentUser!.phone,
         role: _currentUser!.role,
         address: address,
+        avatarUrl: _currentUser!.avatarUrl,
       );
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
+    }
+  }
+
+  Future<bool> updateProfile(String name, String phone, String avatarUrl) async {
+    if (_currentUser == null) return false;
+    _setLoading(true);
+    _setError('');
+    try {
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserProfile(_currentUser!.id, name, phone, avatarUrl);
+      _currentUser = UserModel(
+        id: _currentUser!.id,
+        name: name,
+        email: _currentUser!.email,
+        phone: phone,
+        role: _currentUser!.role,
+        address: _currentUser!.address,
+        avatarUrl: avatarUrl,
+      );
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError(_getFriendlyErrorMessage(e.toString()));
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> changePassword(String newPassword) async {
+    _setLoading(true);
+    _setError('');
+    try {
+      await _authService.updatePassword(newPassword);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('requires-recent-login')) {
+        _setError('Vui lòng đăng xuất và đăng nhập lại trước khi đổi mật khẩu.');
+      } else if (errorStr.contains('weak-password')) {
+        _setError('Mật khẩu quá yếu (cần ít nhất 6 ký tự).');
+      } else {
+        _setError('Đổi mật khẩu thất bại. Thử lại sau.');
+      }
+      _setLoading(false);
+      return false;
     }
   }
 }

@@ -31,6 +31,12 @@ class MockAuthViewModel extends ChangeNotifier implements AuthViewModel {
 
   @override
   Future<void> updateAddress(String address) async {}
+
+  @override
+  Future<bool> updateProfile(String name, String phone, String avatarUrl) async => true;
+
+  @override
+  Future<bool> changePassword(String newPassword) async => true;
 }
 
 void main() {

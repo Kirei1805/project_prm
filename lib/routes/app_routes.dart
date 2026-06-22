@@ -11,6 +11,7 @@ import '../views/customer/order_history_screen.dart';
 import '../views/customer/order_detail_screen.dart';
 import '../views/customer/store_location_screen.dart';
 import '../views/customer/chat_screen.dart';
+import '../views/customer/profile_screen.dart';
 import '../views/admin/admin_dashboard_screen.dart';
 import '../views/admin/product_management_screen.dart';
 import '../views/admin/add_edit_product_screen.dart';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String adminUsers = '/admin_users';
   static const String adminChats = '/admin_chats';
   static const String notifications = '/notifications';
+  static const String profile = '/profile';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -76,6 +78,8 @@ class AppRoutes {
           builder: (_) => const ChatScreen(),
           settings: settings,
         );
+      case profile:
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case adminDashboard:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
       case adminProducts:
