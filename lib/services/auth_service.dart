@@ -29,6 +29,7 @@ class AuthService {
           email: email,
           phone: phone,
           role: 'customer', // Default role
+          avatarUrl: '',
         );
 
         await _firestoreService.createUser(newUser);
@@ -68,6 +69,20 @@ class AuthService {
       await _firestoreService.updateUserAddress(uid, address);
     } catch (e) {
       print('Update address error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        await user.updatePassword(newPassword);
+      } else {
+        throw Exception("Not logged in");
+      }
+    } catch (e) {
+      print('Update password error: $e');
       rethrow;
     }
   }

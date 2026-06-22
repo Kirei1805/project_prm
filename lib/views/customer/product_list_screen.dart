@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/product_viewmodel.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/shimmer_product_card.dart';
+import '../../widgets/empty_state_widget.dart';
 
 class ProductListScreen extends StatelessWidget {
   const ProductListScreen({super.key});
@@ -49,87 +51,121 @@ class ProductListScreen extends StatelessWidget {
         ),
       ),
       body: productViewModel.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: 6, // Hiển thị 6 khung shimmer
+              itemBuilder: (context, index) => const ShimmerProductCard(),
+            )
           : productViewModel.products.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No products found.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-                  ),
+              ? const EmptyStateWidget(
+                  title: 'No products found',
+                  subtitle: 'Try adjusting your search or filters to find what you are looking for.',
+                  icon: Icons.search_off_rounded,
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: productViewModel.products.length,
-                  itemBuilder: (context, index) {
-                    final product = productViewModel.products[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/product_detail', arguments: product);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                child: product.imageUrl.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: product.imageUrl,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                                        errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: AppColors.textSecondary),
-                                      )
-                                    : Container(
-                                        color: AppColors.background,
-                                        width: double.infinity,
-                                        child: const Icon(Icons.memory, size: 50, color: AppColors.textSecondary),
+              : Column(
+                  children: [
+                    Expanded(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification scrollInfo) {
+                          if (!productViewModel.isFetchingMore &&
+                              productViewModel.hasMore &&
+                              scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
+                            productViewModel.loadMore();
+                            return true;
+                          }
+                          return false;
+                        },
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: productViewModel.products.length,
+                          itemBuilder: (context, index) {
+                            final product = productViewModel.products[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(context, '/product_detail', arguments: product);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                        child: Hero(
+                                          tag: 'product_image_${product.id}',
+                                          child: product.imageUrl.isNotEmpty
+                                              ? CachedNetworkImage(
+                                                  imageUrl: product.imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                                  errorWidget: (context, url, error) => const Icon(Icons.image_not_supported, size: 50, color: AppColors.textSecondary),
+                                                )
+                                              : Container(
+                                                  color: AppColors.background,
+                                                  width: double.infinity,
+                                                  child: const Icon(Icons.memory, size: 50, color: AppColors.textSecondary),
+                                                ),
+                                        ),
                                       ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: AppColors.textPrimary,
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    CurrencyFormatter.format(product.price),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: AppColors.accent,
+                                    Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            product.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            CurrencyFormatter.format(product.price),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: AppColors.accent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    if (productViewModel.isFetchingMore)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
                 ),
     );
   }

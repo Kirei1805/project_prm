@@ -47,6 +47,14 @@ class FirestoreService {
     await _firestore.collection('users').doc(uid).update({'address': address});
   }
 
+  Future<void> updateUserProfile(String uid, String name, String phone, String avatarUrl) async {
+    await _firestore.collection('users').doc(uid).update({
+      'name': name,
+      'phone': phone,
+      'avatarUrl': avatarUrl,
+    });
+  }
+
   // --- Categories ---
   Stream<List<CategoryModel>> getCategoriesStream() {
     return _firestore.collection('categories')

@@ -15,14 +15,20 @@ class ProductViewModel extends ChangeNotifier {
   String _searchQuery = '';
   String? _selectedCategoryId;
   
+  int _pageSize = 10;
+  int _currentPage = 1;
+  bool _isFetchingMore = false;
+  
   // Advanced filters
   double? _minPrice;
   double? _maxPrice;
   List<String> _selectedBrands = [];
 
-  List<ProductModel> get products => _filteredProducts;
+  List<ProductModel> get products => _filteredProducts.take(_pageSize * _currentPage).toList();
   List<CategoryModel> get categories => _categories;
   bool get isLoading => _isLoading;
+  bool get hasMore => (_pageSize * _currentPage) < _filteredProducts.length;
+  bool get isFetchingMore => _isFetchingMore;
   String get searchQuery => _searchQuery;
   String? get selectedCategoryId => _selectedCategoryId;
   
@@ -86,9 +92,14 @@ class ProductViewModel extends ChangeNotifier {
     });
   }
 
+  Timer? _debounce;
+
   void setSearchQuery(String query) {
-    _searchQuery = query;
-    _applyFilters();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _searchQuery = query;
+      _applyFilters();
+    });
   }
 
   void setCategoryFilter(String? categoryId) {
@@ -117,6 +128,7 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   void _applyFilters() {
+    _currentPage = 1;
     _filteredProducts = _allProducts.where((product) {
       bool matchesSearch = product.name.toLowerCase().contains(_searchQuery.toLowerCase()) || 
                            product.description.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -128,6 +140,19 @@ class ProductViewModel extends ChangeNotifier {
       
       return matchesSearch && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesBrand;
     }).toList();
+    notifyListeners();
+  }
+
+  Future<void> loadMore() async {
+    if (_isFetchingMore || !hasMore) return;
+    
+    _isFetchingMore = true;
+    notifyListeners();
+    
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+    
+    _currentPage++;
+    _isFetchingMore = false;
     notifyListeners();
   }
 

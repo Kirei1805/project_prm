@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/currency_formatter.dart';
+import '../../widgets/empty_state_widget.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -27,11 +28,10 @@ class CartScreen extends StatelessWidget {
         ],
       ),
       body: cartItems.isEmpty
-          ? const Center(
-              child: Text(
-                'Your cart is empty',
-                style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-              ),
+          ? const EmptyStateWidget(
+              title: 'Your cart is empty',
+              subtitle: 'Looks like you haven\'t added anything to your cart yet.',
+              icon: Icons.shopping_cart_outlined,
             )
           : Column(
               children: [
