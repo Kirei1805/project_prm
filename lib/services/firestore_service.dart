@@ -88,22 +88,37 @@ class FirestoreService {
 
   // --- Orders ---
   Future<void> createOrder(OrderModel order) async {
-    WriteBatch batch = _firestore.batch();
+    await _firestore.runTransaction((transaction) async {
+      // 1. Read all product documents first (Transactions require all reads before writes)
+      List<DocumentSnapshot> productSnaps = [];
+      for (var item in order.items) {
+        DocumentReference productRef = _firestore.collection('products').doc(item.productId);
+        productSnaps.add(await transaction.get(productRef));
+      }
 
-    // Generate a new document reference for the order
-    DocumentReference orderRef = _firestore.collection('orders').doc();
-    batch.set(orderRef, order.toMap());
+      // 2. Perform checks and writes
+      for (int i = 0; i < order.items.length; i++) {
+        var item = order.items[i];
+        var snap = productSnaps[i];
+        
+        if (!snap.exists) {
+          throw Exception('Sản phẩm không tồn tại (ID: ${item.productId})');
+        }
+        
+        int currentStock = (snap.data() as Map<String, dynamic>)['stock'] ?? 0;
+        if (currentStock < item.quantity) {
+          throw Exception('Sản phẩm "${item.name}" không đủ số lượng (còn lại: $currentStock).');
+        }
+        
+        transaction.update(snap.reference, {
+          'stock': currentStock - item.quantity
+        });
+      }
 
-    // Deduct stock for each item in the order
-    for (var item in order.items) {
-      DocumentReference productRef = _firestore.collection('products').doc(item.productId);
-      batch.update(productRef, {
-        'stock': FieldValue.increment(-item.quantity)
-      });
-    }
-
-    // Commit all operations atomically
-    await batch.commit();
+      // 3. Create the order document
+      DocumentReference orderRef = _firestore.collection('orders').doc();
+      transaction.set(orderRef, order.toMap());
+    });
   }
 
   Stream<List<OrderModel>> getUserOrdersStream(String userId) {

@@ -20,6 +20,7 @@ import '../views/admin/user_management_screen.dart';
 import '../views/admin/chat_management_screen.dart';
 import '../views/customer/notifications_screen.dart';
 
+/// Centralized routing configuration for the application
 class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';

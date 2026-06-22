@@ -44,6 +44,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final orderViewModel = Provider.of<OrderViewModel>(context, listen: false);
 
       if (auth.currentUser == null) return;
+      
+      if (cart.items.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your cart is empty!'), backgroundColor: AppColors.error),
+        );
+        return;
+      }
 
       // Generate a unique order ID
       final String orderId = DateTime.now().millisecondsSinceEpoch.toString();

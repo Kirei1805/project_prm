@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
+/// Defines the overall theme and styling for the application
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(

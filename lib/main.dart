@@ -48,7 +48,6 @@ void main() async {
       child: const ElectroHubApp(),
     ),
   );
-
   // Notification init - fire and forget, không block gì cả
   Future.delayed(const Duration(seconds: 3), () async {
     try {

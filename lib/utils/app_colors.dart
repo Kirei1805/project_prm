@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Contains all the color constants used throughout the application
 class AppColors {
   static const Color primary = Color(0xFF0F4C75);
   static const Color secondary = Color(0xFF3282B8);
