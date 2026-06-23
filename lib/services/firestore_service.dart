@@ -4,9 +4,51 @@ import '../models/product_model.dart';
 import '../models/category_model.dart';
 import '../models/order_model.dart';
 import '../models/message_model.dart';
+import 'package:latlong2/latlong.dart';
 
 class FirestoreService {
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  // --- Settings (Store Location) ---
+  Future<Map<String, dynamic>> getStoreSettings() async {
+    try {
+      final doc = await _firestore.collection('settings').doc('general').get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        return {
+          'location': LatLng(
+            (data['storeLatitude'] as num?)?.toDouble() ?? 10.762622,
+            (data['storeLongitude'] as num?)?.toDouble() ?? 106.660172,
+          ),
+          'address': data['storeAddress'] as String? ?? 'Ho Chi Minh City, Vietnam',
+          'openHours': data['storeOpenHours'] as String? ?? '8:00 AM - 6:00 PM',
+        };
+      }
+    } catch (e) {
+      print('Error fetching store settings: $e');
+    }
+    return {
+      'location': const LatLng(10.762622, 106.660172),
+      'address': 'Ho Chi Minh City, Vietnam',
+      'openHours': '8:00 AM - 6:00 PM',
+    };
+  }
+
+  Future<LatLng> getStoreLocation() async {
+    final settings = await getStoreSettings();
+    return settings['location'] as LatLng;
+  }
+
+  Future<void> updateStoreLocation(LatLng newLocation, {String? address, String? openHours}) async {
+    final Map<String, dynamic> data = {
+      'storeLatitude': newLocation.latitude,
+      'storeLongitude': newLocation.longitude,
+    };
+    if (address != null) data['storeAddress'] = address;
+    if (openHours != null) data['storeOpenHours'] = openHours;
+    
+    await _firestore.collection('settings').doc('general').set(data, SetOptions(merge: true));
+  }
 
   // --- Users ---
   Future<void> createUser(UserModel user) async {
@@ -45,6 +87,14 @@ class FirestoreService {
 
   Future<void> updateUserAddress(String uid, String address) async {
     await _firestore.collection('users').doc(uid).update({'address': address});
+  }
+
+  Future<void> updateUserAddresses(String uid, List<String> addresses) async {
+    await _firestore.collection('users').doc(uid).update({'savedAddresses': addresses});
+  }
+
+  Future<void> updateUserFavorites(String uid, List<String> favorites) async {
+    await _firestore.collection('users').doc(uid).update({'favoriteProductIds': favorites});
   }
 
   Future<void> updateUserProfile(String uid, String name, String phone, String avatarUrl) async {

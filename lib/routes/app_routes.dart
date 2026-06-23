@@ -19,6 +19,7 @@ import '../views/admin/order_management_screen.dart';
 import '../views/admin/user_management_screen.dart';
 import '../views/admin/chat_management_screen.dart';
 import '../views/customer/notifications_screen.dart';
+import '../views/customer/favorites_screen.dart';
 
 /// Centralized routing configuration for the application
 class AppRoutes {
@@ -42,6 +43,7 @@ class AppRoutes {
   static const String adminChats = '/admin_chats';
   static const String notifications = '/notifications';
   static const String profile = '/profile';
+  static const String favorites = '/favorites';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -80,6 +82,8 @@ class AppRoutes {
         );
       case profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
+      case favorites:
+        return MaterialPageRoute(builder: (_) => const FavoritesScreen());
       case adminDashboard:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
       case adminProducts:

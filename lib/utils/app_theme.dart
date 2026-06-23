@@ -6,52 +6,54 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       brightness: Brightness.light,
-      scaffoldBackgroundColor: Colors.grey[50],
+      scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
-        surface: Colors.white,
-        background: Colors.grey[50]!,
+        surface: AppColors.surface,
         error: AppColors.error,
       ),
+      fontFamily: 'Inter', // Assuming standard modern sans-serif
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.black87),
+        centerTitle: false,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: TextStyle(
-          color: Colors.black87,
-          fontSize: 20,
+          color: AppColors.textPrimary,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.grey[200],
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accent, width: 2),
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
-        hintStyle: TextStyle(color: Colors.grey[600]),
-        labelStyle: TextStyle(color: Colors.grey[600]),
+        hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(24),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          elevation: 0,
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -60,7 +62,8 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.accent,
+          foregroundColor: AppColors.primary,
+          textStyle: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );

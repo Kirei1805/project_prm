@@ -1,34 +1,35 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
+import 'firestore_service.dart';
 
 class LocationService {
-  Future<Position?> getCurrentLocation() async {
+  Future<Position> getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return null;
+      throw Exception('Vui lòng bật GPS/Vị trí trên điện thoại của bạn.');
     }
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return null;
+        throw Exception('Bạn đã từ chối cấp quyền vị trí.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return null;
+      throw Exception('Quyền vị trí bị chặn vĩnh viễn. Vui lòng vào Cài đặt máy để mở lại.');
     }
 
     return await Geolocator.getCurrentPosition();
   }
 
-  // Hardcoded main store location for demonstration
-  LatLng getStoreLocation() {
-    // Somewhere in HCMC
-    return const LatLng(10.762622, 106.660172);
+  // Fetch store location from Firestore
+  Future<LatLng> getStoreLocation() async {
+    final firestoreService = FirestoreService();
+    return await firestoreService.getStoreLocation();
   }
 }

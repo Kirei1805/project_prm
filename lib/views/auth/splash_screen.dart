@@ -29,7 +29,8 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      if (authViewModel.isAuthenticated) {
+      final isLoggedIn = await authViewModel.checkAuthStatus();
+      if (isLoggedIn) {
         if (authViewModel.currentUser?.role == 'admin') {
           Navigator.pushReplacementNamed(context, '/admin_dashboard');
         } else {

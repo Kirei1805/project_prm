@@ -25,6 +25,7 @@ class ProductViewModel extends ChangeNotifier {
   List<String> _selectedBrands = [];
 
   List<ProductModel> get products => _filteredProducts.take(_pageSize * _currentPage).toList();
+  List<ProductModel> get allProducts => _allProducts;
   List<CategoryModel> get categories => _categories;
   bool get isLoading => _isLoading;
   bool get hasMore => (_pageSize * _currentPage) < _filteredProducts.length;
@@ -68,7 +69,17 @@ class ProductViewModel extends ChangeNotifier {
 
   void _initStreams() {
     _categoriesSubscription = _firestoreService.getCategoriesStream().listen((cats) {
-      _categories = cats;
+      if (cats.isEmpty) {
+        // Fallback categories if database is empty
+        _categories = [
+          CategoryModel(id: 'cat_boards', name: 'Boards'),
+          CategoryModel(id: 'cat_sensors', name: 'Sensors'),
+          CategoryModel(id: 'cat_modules', name: 'Modules'),
+          CategoryModel(id: 'cat_motors', name: 'Motors'),
+        ];
+      } else {
+        _categories = cats;
+      }
       notifyListeners();
     });
 
@@ -167,6 +178,10 @@ class ProductViewModel extends ChangeNotifier {
     recommendations.sort((a, b) => b.stock.compareTo(a.stock));
     
     return recommendations.take(limit).toList();
+  }
+
+  List<ProductModel> getProductsByIds(List<String> ids) {
+    return _allProducts.where((p) => ids.contains(p.id)).toList();
   }
 
   @override
