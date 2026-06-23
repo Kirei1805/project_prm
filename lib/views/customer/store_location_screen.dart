@@ -67,7 +67,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
             height: 60,
             child: const Icon(
               Icons.location_on,
-              color: Colors.red,
+              color: AppColors.accent,
               size: 50,
             ),
           ),
@@ -105,7 +105,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
           height: 60,
           child: const Icon(
             Icons.location_on,
-            color: Colors.red,
+            color: AppColors.accent,
             size: 50,
           ),
         ),
