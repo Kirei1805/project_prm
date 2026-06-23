@@ -42,10 +42,7 @@
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false" />
             
-        <!-- Google Maps API Key -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAXhE0yhtLgecZa9Y_CRZsNgep1jw7Ylkw" />
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

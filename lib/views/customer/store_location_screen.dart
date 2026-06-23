@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../services/location_service.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/app_colors.dart';
 
 class StoreLocationScreen extends StatefulWidget {
   final bool isPickerMode;
+  final bool isAdminMode;
   
-  const StoreLocationScreen({super.key, this.isPickerMode = false});
+  const StoreLocationScreen({super.key, this.isPickerMode = false, this.isAdminMode = false});
 
   @override
   State<StoreLocationScreen> createState() => _StoreLocationScreenState();
@@ -15,42 +18,81 @@ class StoreLocationScreen extends StatefulWidget {
 
 class _StoreLocationScreenState extends State<StoreLocationScreen> {
   final LocationService _locationService = LocationService();
-  GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
+  final List<Marker> _markers = [];
   
+  LatLng? _storeLocation;
+  bool _isLoading = true;
+
   LatLng? _selectedLocation;
   String _selectedAddress = '';
   bool _isGeocoding = false;
 
+  String _storeAddressInfo = '';
+  String _storeOpenHours = '';
+  final TextEditingController _addressInfoController = TextEditingController();
+  final TextEditingController _openHoursController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
-    if (!widget.isPickerMode) {
-      _initStoreLocation();
+    _fetchStoreLocation();
+  }
+
+  Future<void> _fetchStoreLocation() async {
+    final firestoreService = FirestoreService();
+    final settings = await firestoreService.getStoreSettings();
+    final location = settings['location'] as LatLng;
+    
+    if (mounted) {
+      setState(() {
+        _storeLocation = location;
+        _storeAddressInfo = settings['address'] as String;
+        _storeOpenHours = settings['openHours'] as String;
+        
+        _addressInfoController.text = _storeAddressInfo;
+        _openHoursController.text = _storeOpenHours;
+        
+        _isLoading = false;
+      });
+      if (!widget.isPickerMode && !widget.isAdminMode) {
+        _initStoreMarker(location);
+      } else if (widget.isAdminMode) {
+        // Show current store location marker as editable
+        _selectedLocation = location;
+        _markers.add(
+          Marker(
+            point: location,
+            width: 60,
+            height: 60,
+            child: const Icon(
+              Icons.location_on,
+              color: Colors.red,
+              size: 50,
+            ),
+          ),
+        );
+      }
     }
   }
 
-  void _initStoreLocation() {
-    final storeLatLng = _locationService.getStoreLocation();
+  void _initStoreMarker(LatLng storeLatLng) {
     _markers.add(
       Marker(
-        markerId: const MarkerId('store_location'),
-        position: storeLatLng,
-        infoWindow: const InfoWindow(
-          title: 'ElectroHub Main Store',
-          snippet: 'Your Electronic Components Store',
+        point: storeLatLng,
+        width: 60,
+        height: 60,
+        child: const Icon(
+          Icons.location_on,
+          color: AppColors.accent,
+          size: 50,
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
       ),
     );
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
-  Future<void> _onMapTapped(LatLng position) async {
-    if (!widget.isPickerMode) return;
+  Future<void> _onMapTapped(TapPosition tapPosition, LatLng position) async {
+    if (!widget.isPickerMode && !widget.isAdminMode) return;
 
     setState(() {
       _selectedLocation = position;
@@ -58,9 +100,14 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
       _markers.clear();
       _markers.add(
         Marker(
-          markerId: const MarkerId('selected_location'),
-          position: position,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          point: position,
+          width: 60,
+          height: 60,
+          child: const Icon(
+            Icons.location_on,
+            color: Colors.red,
+            size: 50,
+          ),
         ),
       );
     });
@@ -82,26 +129,79 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
     }
   }
 
+  Future<void> _moveToCurrentLocation({bool showError = true}) async {
+    try {
+      final position = await _locationService.getCurrentLocation();
+      final userLatLng = LatLng(position.latitude, position.longitude);
+      _mapController.move(userLatLng, 15.0);
+      
+      // Optionally add a marker for user's location if in picker mode
+      if (widget.isPickerMode) {
+        _onMapTapped(TapPosition(Offset.zero, Offset.zero), userLatLng);
+      }
+    } catch (e) {
+      if (mounted && showError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.isAdminMode ? 'Edit Store Location' : (widget.isPickerMode ? 'Select Delivery Address' : 'Store Location'))),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isPickerMode ? 'Select Delivery Address' : 'Store Location'),
+        title: Text(widget.isAdminMode ? 'Edit Store Location' : (widget.isPickerMode ? 'Select Delivery Address' : 'Store Location')),
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: CameraPosition(
-              target: _locationService.getStoreLocation(),
-              zoom: 15.0,
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _storeLocation!,
+              initialZoom: 15.0,
+              onTap: _onMapTapped,
+              onMapReady: () {
+                if (widget.isPickerMode) {
+                  _moveToCurrentLocation(showError: false);
+                }
+              },
             ),
-            markers: _markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            onTap: _onMapTapped,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.project_prm',
+              ),
+              MarkerLayer(
+                markers: _markers,
+              ),
+            ],
           ),
-          if (!widget.isPickerMode)
+          
+          // My Location Button
+          Positioned(
+            bottom: (widget.isPickerMode || widget.isAdminMode) && _selectedLocation != null ? 180 : ((widget.isPickerMode || widget.isAdminMode) ? 30 : 160),
+            right: 16,
+            child: FloatingActionButton(
+              heroTag: 'my_location',
+              backgroundColor: AppColors.surface,
+              onPressed: _moveToCurrentLocation,
+              child: const Icon(Icons.my_location, color: AppColors.accent),
+            ),
+          ),
+          
+          if (!widget.isPickerMode && !widget.isAdminMode)
             Positioned(
               bottom: 30,
               left: 16,
@@ -119,11 +219,11 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
                     ),
                   ],
                 ),
-                child: const Column(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'ElectroHub Main Store',
                       style: TextStyle(
                         fontSize: 18,
@@ -131,28 +231,28 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on, color: AppColors.accent, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.location_on, color: AppColors.accent, size: 20),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Ho Chi Minh City, Vietnam',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            _storeAddressInfo,
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.access_time, color: AppColors.accent, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.access_time, color: AppColors.accent, size: 20),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Open: 8:00 AM - 6:00 PM',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            'Open: $_storeOpenHours',
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
                       ],
@@ -162,7 +262,7 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
               ),
             ),
           
-          if (widget.isPickerMode && _selectedLocation != null)
+          if ((widget.isPickerMode || widget.isAdminMode) && _selectedLocation != null)
             Positioned(
               bottom: 30,
               left: 16,
@@ -184,9 +284,9 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Selected Address',
-                      style: TextStyle(
+                    Text(
+                      widget.isAdminMode ? 'New Store Location' : 'Selected Address',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textSecondary,
@@ -203,21 +303,56 @@ class _StoreLocationScreenState extends State<StoreLocationScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                    if (widget.isAdminMode) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _addressInfoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Store Address Display',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _openHoursController,
+                        decoration: const InputDecoration(
+                          labelText: 'Opening Hours',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: _isGeocoding || _selectedAddress.isEmpty || _selectedAddress == 'Address not found'
+                      onPressed: _isGeocoding || _selectedLocation == null
                           ? null
-                          : () {
-                              Navigator.pop(context, _selectedAddress);
+                          : () async {
+                              if (widget.isAdminMode) {
+                                final firestoreService = FirestoreService();
+                                await firestoreService.updateStoreLocation(
+                                  _selectedLocation!,
+                                  address: _addressInfoController.text,
+                                  openHours: _openHoursController.text,
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Store location updated successfully!'), backgroundColor: Colors.green));
+                                  Navigator.pop(context);
+                                }
+                              } else {
+                                if (_selectedAddress.isNotEmpty && _selectedAddress != 'Address not found') {
+                                  Navigator.pop(context, _selectedAddress);
+                                }
+                              }
                             },
-                      child: const Text('CONFIRM ADDRESS'),
+                      child: Text(widget.isAdminMode ? 'SAVE STORE LOCATION' : 'CONFIRM ADDRESS'),
                     ),
                   ],
                 ),
               ),
             ),
             
-          if (widget.isPickerMode && _selectedLocation == null)
+          if ((widget.isPickerMode || widget.isAdminMode) && _selectedLocation == null)
             Positioned(
               top: 16,
               left: 16,

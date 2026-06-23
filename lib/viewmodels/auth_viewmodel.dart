@@ -25,6 +25,23 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> checkAuthStatus() async {
+    _setLoading(true);
+    try {
+      final uid = _authService.currentUserId;
+      if (uid != null) {
+        final firestoreService = FirestoreService();
+        _currentUser = await firestoreService.getUser(uid);
+      } else {
+        _currentUser = null;
+      }
+    } catch (e) {
+      _currentUser = null;
+    }
+    _setLoading(false);
+    return _currentUser != null;
+  }
+
   String _getFriendlyErrorMessage(String error) {
     final lowerError = error.toLowerCase();
     if (lowerError.contains('network-request-failed') || lowerError.contains('connection timed out')) {
@@ -99,15 +116,56 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _authService.updateAddress(_currentUser!.id, address);
       // Update local state
-      _currentUser = UserModel(
-        id: _currentUser!.id,
-        name: _currentUser!.name,
-        email: _currentUser!.email,
-        phone: _currentUser!.phone,
-        role: _currentUser!.role,
-        address: address,
-        avatarUrl: _currentUser!.avatarUrl,
-      );
+      _currentUser = _currentUser!.copyWith(address: address);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    }
+  }
+
+  Future<void> addSavedAddress(String address) async {
+    if (_currentUser == null) return;
+    if (_currentUser!.savedAddresses.contains(address)) return; // Already exists
+    
+    try {
+      final updatedList = List<String>.from(_currentUser!.savedAddresses)..add(address);
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserAddresses(_currentUser!.id, updatedList);
+      _currentUser = _currentUser!.copyWith(savedAddresses: updatedList);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    }
+  }
+
+  Future<void> removeSavedAddress(String address) async {
+    if (_currentUser == null) return;
+    
+    try {
+      final updatedList = List<String>.from(_currentUser!.savedAddresses)..remove(address);
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserAddresses(_currentUser!.id, updatedList);
+      _currentUser = _currentUser!.copyWith(savedAddresses: updatedList);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    }
+  }
+
+  Future<void> toggleFavorite(String productId) async {
+    if (_currentUser == null) return;
+    
+    try {
+      final updatedList = List<String>.from(_currentUser!.favoriteProductIds);
+      if (updatedList.contains(productId)) {
+        updatedList.remove(productId);
+      } else {
+        updatedList.add(productId);
+      }
+      
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserFavorites(_currentUser!.id, updatedList);
+      _currentUser = _currentUser!.copyWith(favoriteProductIds: updatedList);
       notifyListeners();
     } catch (e) {
       _setError(e.toString());

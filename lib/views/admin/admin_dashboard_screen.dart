@@ -4,6 +4,7 @@ import '../../viewmodels/admin_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/currency_formatter.dart';
+import '../customer/store_location_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -83,6 +84,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/admin_users');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.location_on, color: AppColors.accent),
+              title: const Text('Store Location', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StoreLocationScreen(isAdminMode: true)),
+                );
               },
             ),
             ListTile(

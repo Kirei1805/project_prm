@@ -21,7 +21,7 @@ class ProductListScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
-              _showFilterBottomSheet(context, productViewModel);
+              ProductListScreen.showFilterBottomSheet(context, productViewModel);
             },
           ),
         ],
@@ -170,7 +170,7 @@ class ProductListScreen extends StatelessWidget {
     );
   }
 
-  void _showFilterBottomSheet(BuildContext context, ProductViewModel viewModel) {
+  static void showFilterBottomSheet(BuildContext context, ProductViewModel viewModel) {
     double? tempMinPrice = viewModel.minPrice;
     double? tempMaxPrice = viewModel.maxPrice;
     List<String> tempSelectedBrands = List.from(viewModel.selectedBrands);
