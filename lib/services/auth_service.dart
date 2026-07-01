@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import 'firestore_service.dart';
 
@@ -60,6 +61,57 @@ class AuthService {
       return null;
     } catch (e) {
       print('Login error: $e');
+      rethrow;
+    }
+  }
+
+  Future<UserModel?> signInWithGoogle() async {
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        // User canceled the sign-in
+        return null;
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? firebaseUser = userCredential.user;
+
+      if (firebaseUser != null) {
+        // Check if user exists in Firestore
+        UserModel? existingUser = await _firestoreService.getUser(firebaseUser.uid);
+        
+        if (existingUser != null) {
+          return existingUser;
+        } else {
+          // New user, save to Firestore
+          UserModel newUser = UserModel(
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName ?? 'Google User',
+            email: firebaseUser.email ?? '',
+            phone: firebaseUser.phoneNumber ?? '',
+            role: 'customer', // Default role
+            avatarUrl: firebaseUser.photoURL ?? '',
+          );
+
+          await _firestoreService.createUser(newUser);
+          return newUser;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Google Sign-In error: $e');
       rethrow;
     }
   }

@@ -48,6 +48,9 @@ class MockAuthViewModel extends ChangeNotifier implements AuthViewModel {
   Future<void> toggleFavorite(String productId) async {}
 
   @override
+  Future<bool> signInWithGoogle() async => true;
+
+  @override
   Future<bool> checkAuthStatus() async => false;
 }
 
