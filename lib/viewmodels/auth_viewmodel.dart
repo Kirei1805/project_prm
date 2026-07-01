@@ -82,6 +82,24 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    _setLoading(true);
+    _setError('');
+    try {
+      _currentUser = await _authService.signInWithGoogle();
+      _setLoading(false);
+      if (_currentUser == null) {
+        _setError('Đăng nhập Google bị hủy hoặc thất bại.');
+      }
+      notifyListeners();
+      return _currentUser != null;
+    } catch (e) {
+      _setError('Đăng nhập Google thất bại: ${e.toString()}');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<bool> register(String email, String password, String name, String phone) async {
     _setLoading(true);
     _setError('');

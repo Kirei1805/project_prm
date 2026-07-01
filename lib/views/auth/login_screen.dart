@@ -55,6 +55,28 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _handleGoogleSignIn() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    if (authViewModel.isLoading) return;
+    
+    final success = await authViewModel.signInWithGoogle();
+    
+    if (success && mounted) {
+      if (authViewModel.currentUser?.role == 'admin') {
+        Navigator.pushReplacementNamed(context, '/admin_dashboard');
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } else if (mounted && authViewModel.errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authViewModel.errorMessage),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
@@ -149,6 +171,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: authViewModel.isLoading
                         ? const CircularProgressIndicator(color: AppColors.background)
                         : const Text('LOGIN'),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: authViewModel.isLoading ? null : _handleGoogleSignIn,
+                    icon: Image.network(
+                      'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                      height: 24,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 30),
+                    ),
+                    label: const Text('Sign in with Google'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: AppColors.textSecondary),
+                      foregroundColor: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
